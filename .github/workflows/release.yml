@@ -1,0 +1,45 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # need tag history to check what already exists
+
+      - name: Read version from library.properties
+        id: version
+        run: |
+          VERSION=$(grep '^version=' library.properties | cut -d'=' -f2 | tr -d '[:space:]')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Check if this version is already tagged
+        id: check_tag
+        run: |
+          if git rev-parse "v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: arduino/arduino-lint-action@v2
+        if: steps.check_tag.outputs.exists == 'false'
+        with:
+          compliance: specification
+          library-manager: submit
+
+      - name: Tag release
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          git config user.name "yostlabs-bot"
+          git config user.email "bot@yostlabs.com"
+          git tag "v${{ steps.version.outputs.version }}"
+          git push origin "v${{ steps.version.outputs.version }}"
