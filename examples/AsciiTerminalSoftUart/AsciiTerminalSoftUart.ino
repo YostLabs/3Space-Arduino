@@ -1,6 +1,7 @@
 /*
- * Shows using the SPI Com Class to communicate with a TSS sensor
- * over SPI with an Ascii terminal. 
+ * Shows using the SoftwareSerial Com Class to communicate with a TSS sensor
+ * over UART with an Ascii terminal. This example will not work if your board
+ * does not support SoftwareSerial
  *
  * This is a minimal example to show doing raw communication 
  * without using the TSS_Sensor object. The TSS_Sensor object
@@ -10,50 +11,24 @@
  */
 
 #include <TSS.h>
-#include <TSS/com/spi.h>
-
-/*
-* Arduino UNO SPI pins:
-* MOSI: pin 11
-* MISO: pin 12
-* SCK: pin 13
-* Note: Arduino UNO is 5V logic
-* and the 3-Space sensor is 3V logic.
-* A bi-directional level converter is required.
-*/
-
-/*
-* ESP32 SPI pins default to:
-* VSPI
-* MOSI: 23
-* MISO: 19
-* SCK: 18
-*/
-
-// Can run up to 10MHz based on sensor settings and wiring.
-// Defaulting to low speed of 100Khz to ensure example 
-// works with dupont cables and slow passive logic level converters.
-// A resistor may still be needed in series on the CLK line to reduce
-// communication noise depending on your circuit. Try 200-300 ohms if problematic.
-#define SPI_DEFAULT_CLK 100000
-
-// Controlling CS pin manually instead of using built in SPI clock pin to handle
-// more advance CS control to go with the expected protocol.
-#define CS_PIN 5
+#include <TSS/com/software_serial.h>
+#include <SoftwareSerial.h>
 
 //---------------------------PINS---------------------------
-#define AVAILABLE_DATA_PIN 27
-#define LOADED_DATA_PIN 26
+#define RX_PIN 2
+#define TX_PIN 3
 
 // Full sized atomatic buffer allocation
-// TssSpiComClass spiCom(CS_PIN, SPI_DEFAULT_CLK);
+SoftwareSerial mySerial(RX_PIN, TX_PIN);
+// TssSoftwareSerialComClass uartCom(115200, mySerial);
 
 // Manual buffer allocation. Required for smaller memory devices
 // such as Arduino UNO. Defaulting to this for compatability, but
 // the above method is preferred if RAM space allows.
 uint8_t readBuf[256];
 uint8_t writeBuf[256];
-TssSpiComClassBase spiCom(CS_PIN, SPI_DEFAULT_CLK, SPI, readBuf, sizeof(readBuf), writeBuf, sizeof(writeBuf));
+
+TssSoftwareSerialComClassBase uartCom(115200, mySerial, readBuf, sizeof(readBuf), writeBuf, sizeof(writeBuf));
 
 void setup() {
   // put your setup code here, to run once:
@@ -61,15 +36,27 @@ void setup() {
   Serial.println("Starting");
 
   //Configure and open the communication object
-  spiCom.setTimeout(1000);
-  if(spiCom.open()) {
+  uartCom.setTimeout(1000);
+  if(uartCom.open()) {
     Serial.println("Failed to open.");
   }
   Serial.println("Initialized communication.");
 
-  // This on its lonesome doesn't change the mode used, just gives 
-  // pin info and configures the pins as inputs. Not required.
-  // spiCom.setIrqPins(AVAILABLE_DATA_PIN, LOADED_DATA_PIN);
+  // Depending on your processor, it may not be able to achieve the 115200 default
+  // speed used by yostlabs sensors with SoftwareSerial. When this occurs, you will
+  // see incomplete/corrupt responses. The following code can be uncommented to
+  // reduce the baud rate.
+  // Note: 19200 was selected in our testing with an Arduino Uno as the largest baudrate
+  // that did not return any corrupted data when sending '?all\n'
+  
+  // const char uartSetting[] = "!uart_baudrate=19200\n";
+  // uartCom.beginWrite();
+  // uartCom.write(uartSetting, sizeof(uartSetting)-1);
+  // uartCom.endWrite();
+  // uartCom.clearImmediate();
+  // uartCom.setBaudrate(19200);
+  // uartCom.close();
+  // uartCom.open();
 }
 
 void readAndPrintLine() {
@@ -77,7 +64,7 @@ void readAndPrintLine() {
   bool done = false;
 
   while(!done) {
-    int numRead = spiCom.readUntil('\n', (uint8_t*)result, sizeof(result));
+    int numRead = uartCom.readUntil('\n', (uint8_t*)result, sizeof(result));
     
     if(numRead < 0) {
       Serial.print("  Failed to read - Error ");
@@ -115,12 +102,12 @@ void loop() {
   // Clear any leftover response before sending command
   // (could occur due to limited buffer size or sensor already
   //  having responses available)
-  spiCom.clearImmediate();
+  uartCom.clearImmediate();
 
   // Write ascii command to the sensor
-  spiCom.beginWrite();
-  spiCom.write((uint8_t*)incomingCommand.c_str(), incomingCommand.length());
-  spiCom.endWrite();
+  uartCom.beginWrite();
+  uartCom.write((uint8_t*)incomingCommand.c_str(), incomingCommand.length());
+  uartCom.endWrite();
 
   // Read response
   readAndPrintLine();

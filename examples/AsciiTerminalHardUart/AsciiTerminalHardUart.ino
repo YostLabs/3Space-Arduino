@@ -1,6 +1,8 @@
 /*
- * Shows using the SPI Com Class to communicate with a TSS sensor
- * over SPI with an Ascii terminal. 
+ * Shows using the HardwareSerial Com Class to communicate with a TSS sensor
+ * over UART with an Ascii terminal. This will only compile on devices with at least
+ * 2 Hardware Serial interfaces as it uses the primary interface to communicate
+ * with the computer.
  *
  * This is a minimal example to show doing raw communication 
  * without using the TSS_Sensor object. The TSS_Sensor object
@@ -10,50 +12,19 @@
  */
 
 #include <TSS.h>
-#include <TSS/com/spi.h>
-
-/*
-* Arduino UNO SPI pins:
-* MOSI: pin 11
-* MISO: pin 12
-* SCK: pin 13
-* Note: Arduino UNO is 5V logic
-* and the 3-Space sensor is 3V logic.
-* A bi-directional level converter is required.
-*/
-
-/*
-* ESP32 SPI pins default to:
-* VSPI
-* MOSI: 23
-* MISO: 19
-* SCK: 18
-*/
-
-// Can run up to 10MHz based on sensor settings and wiring.
-// Defaulting to low speed of 100Khz to ensure example 
-// works with dupont cables and slow passive logic level converters.
-// A resistor may still be needed in series on the CLK line to reduce
-// communication noise depending on your circuit. Try 200-300 ohms if problematic.
-#define SPI_DEFAULT_CLK 100000
-
-// Controlling CS pin manually instead of using built in SPI clock pin to handle
-// more advance CS control to go with the expected protocol.
-#define CS_PIN 5
+#include <TSS/com/hardware_serial.h>
 
 //---------------------------PINS---------------------------
-#define AVAILABLE_DATA_PIN 27
-#define LOADED_DATA_PIN 26
-
 // Full sized atomatic buffer allocation
-// TssSpiComClass spiCom(CS_PIN, SPI_DEFAULT_CLK);
+// TssHardwareSerialComClass uartCom(115200, Serial1);
 
 // Manual buffer allocation. Required for smaller memory devices
 // such as Arduino UNO. Defaulting to this for compatability, but
 // the above method is preferred if RAM space allows.
 uint8_t readBuf[256];
 uint8_t writeBuf[256];
-TssSpiComClassBase spiCom(CS_PIN, SPI_DEFAULT_CLK, SPI, readBuf, sizeof(readBuf), writeBuf, sizeof(writeBuf));
+
+TssHardwareSerialComClassBase uartCom(115200, Serial1, readBuf, sizeof(readBuf), writeBuf, sizeof(writeBuf));
 
 void setup() {
   // put your setup code here, to run once:
@@ -61,15 +32,11 @@ void setup() {
   Serial.println("Starting");
 
   //Configure and open the communication object
-  spiCom.setTimeout(1000);
-  if(spiCom.open()) {
+  uartCom.setTimeout(1000);
+  if(uartCom.open()) {
     Serial.println("Failed to open.");
   }
   Serial.println("Initialized communication.");
-
-  // This on its lonesome doesn't change the mode used, just gives 
-  // pin info and configures the pins as inputs. Not required.
-  // spiCom.setIrqPins(AVAILABLE_DATA_PIN, LOADED_DATA_PIN);
 }
 
 void readAndPrintLine() {
@@ -77,7 +44,7 @@ void readAndPrintLine() {
   bool done = false;
 
   while(!done) {
-    int numRead = spiCom.readUntil('\n', (uint8_t*)result, sizeof(result));
+    int numRead = uartCom.readUntil('\n', (uint8_t*)result, sizeof(result));
     
     if(numRead < 0) {
       Serial.print("  Failed to read - Error ");
@@ -115,12 +82,12 @@ void loop() {
   // Clear any leftover response before sending command
   // (could occur due to limited buffer size or sensor already
   //  having responses available)
-  spiCom.clearImmediate();
+  uartCom.clearImmediate();
 
   // Write ascii command to the sensor
-  spiCom.beginWrite();
-  spiCom.write((uint8_t*)incomingCommand.c_str(), incomingCommand.length());
-  spiCom.endWrite();
+  uartCom.beginWrite();
+  uartCom.write((uint8_t*)incomingCommand.c_str(), incomingCommand.length());
+  uartCom.endWrite();
 
   // Read response
   readAndPrintLine();

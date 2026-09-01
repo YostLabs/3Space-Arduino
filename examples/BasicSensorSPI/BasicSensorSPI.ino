@@ -1,3 +1,9 @@
+/*
+ * Example showing using the communication class with a sensor object
+ * to take full advantage of the API. Shows simple command and settings
+ * usage. Intended for 32 bit platforms.
+ */
+
 #include <TSS.h>
 #include <TSS/com/spi.h>
 
@@ -28,16 +34,17 @@
 
 //---------------------------INITIALIZATION/APPLICATION---------------------------
 // If using an interface other than SPI, all that needs to change is this.
-TssSpiComClass m_spi_com(CS_PIN, SPI_DEFAULT_CLK);
-// uint8_t read_buf[512];
-// uint8_t write_buf[512];
-// TssSpiComClassBase m_spi_com(CS_PIN, SPI_DEFAULT_CLK, SPI, read_buf, sizeof(read_buf), write_buf, sizeof(write_buf));
+TssSpiComClass spiCom(CS_PIN, SPI_DEFAULT_CLK);
+
+// uint8_t readBuf[512];
+// uint8_t writeBuf[512];
+// TssSpiComClassBase spiCom(CS_PIN, SPI_DEFAULT_CLK, SPI, readBuf, sizeof(readBuf), writeBuf, sizeof(writeBuf));
 
 // Will contain a generic reference to the Com Class to allow
 // this example to function regardless of what interface is stored here.
-struct TSS_Com_Class *m_com;
+struct TSS_Com_Class *com;
 
-static TSS_Sensor m_sensor;
+static TSS_Sensor sensor;
 
 void printArray(float *data, uint8_t size);
 
@@ -47,15 +54,15 @@ void setup() {
   Serial.println("Starting");
 
   //Create and open the communication object
-  m_com = m_spi_com;
-  tss_com_set_timeout(m_com, 1000);
-  tss_com_open(m_com);
+  com = spiCom;
+  tss_com_set_timeout(com, 1000);
+  tss_com_open(com);
   Serial.println("Com Opened");
 
   //Create the sensor object from the communication object
   printf("Creating sensor object...\n");
-  tssCreateSensor(&m_sensor, m_spi_com);
-  tssInitSensor(&m_sensor);
+  tssCreateSensor(&sensor, spiCom);
+  tssInitSensor(&sensor);
 }
 
 void printArray(float *data, uint8_t size) {
@@ -70,17 +77,17 @@ void loop() {
   while(!Serial.available());
 
   char output[100] = {0};
-  sensorReadVersionFirmware(&m_sensor, output, sizeof(output));
+  sensorReadVersionFirmware(&sensor, output, sizeof(output));
   Serial.print("Firmware Version: ");
   Serial.println(output);
-  sensorReadVersionHardware(&m_sensor, output, sizeof(output));
+  sensorReadVersionHardware(&sensor, output, sizeof(output));
   Serial.print("Hardware Version: ");
   Serial.println(output);
 
   float quaternion[4];
   float accel[3];
-  sensorGetTaredOrientation(&m_sensor, quaternion);
-  sensorGetCorrectedAccelerometerVector(&m_sensor, accel);
+  sensorGetTaredOrientation(&sensor, quaternion);
+  sensorGetCorrectedAccelerometerVector(&sensor, accel);
 
   Serial.print("Quaternion: ");
   printArray(quaternion, 4);
@@ -88,14 +95,14 @@ void loop() {
   printArray(accel, 3);
 
   uint64_t time;
-  sensorGetTimestamp(&m_sensor, &time);
+  sensorGetTimestamp(&sensor, &time);
   Serial.print("Time: ");
   Serial.println(time);
 
-  sensorSoftwareReset(&m_sensor);
+  sensorSoftwareReset(&sensor);
 
   time = 0;
-  sensorGetTimestamp(&m_sensor, &time);
+  sensorGetTimestamp(&sensor, &time);
   Serial.print("Time: ");
   Serial.println(time);
 }
