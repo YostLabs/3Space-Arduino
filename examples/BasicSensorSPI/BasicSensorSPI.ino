@@ -42,7 +42,7 @@ TssSpiComClass spiCom(CS_PIN, SPI_DEFAULT_CLK);
 
 // Will contain a generic reference to the Com Class to allow
 // this example to function regardless of what interface is stored here.
-struct TSS_Com_Class *com;
+TssComClass& com = spiCom;
 
 static TSS_Sensor sensor;
 
@@ -54,14 +54,13 @@ void setup() {
   Serial.println("Starting");
 
   //Create and open the communication object
-  com = spiCom;
-  tss_com_set_timeout(com, 1000);
-  tss_com_open(com);
+  com.setTimeout(1000);
+  com.open();
   Serial.println("Com Opened");
 
   //Create the sensor object from the communication object
   printf("Creating sensor object...\n");
-  tssCreateSensor(&sensor, spiCom);
+  tssCreateSensor(&sensor, com);
   tssInitSensor(&sensor);
 }
 

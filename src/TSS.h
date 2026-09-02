@@ -6,11 +6,11 @@
 #include "tss/api/command.h"
 #include "tss/api/header.h"
 
-#include "tss/com/com_class.h"
-#include "tss/com/managed_com.h"
-
 #include "tss/tools/firmware.h"
 
 #include "tss/sys/time.h"
+
+#include "tss/cpp/com/com_class.hpp"
+using TssComClass = tss::ComClass;
 
 #endif /* __YOSTLABS_TSS_H__ */

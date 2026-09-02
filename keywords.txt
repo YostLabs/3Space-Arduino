@@ -1,0 +1,39 @@
+TssComClass	KEYWORD1
+open	KEYWORD2
+close	KEYWORD2
+read	KEYWORD2
+write	KEYWORD2
+setTimeout	KEYWORD2
+getTimeout	KEYWORD2
+readUntil	KEYWORD2
+clearImmediate	KEYWORD2
+clearTimeout	KEYWORD2
+peek	KEYWORD2
+peekUntil	KEYWORD2
+peekCapacity	KEYWORD2
+length	KEYWORD2
+beginWrite	KEYWORD2
+endWrite	KEYWORD2
+reenumerate	KEYWORD2
+autoDetect	KEYWORD2
+
+TssHardwareSerialComClassBase	KEYWORD1
+TssHardwareSerialComClass	KEYWORD1
+TssSoftwareSerialComClassBase	KEYWORD1
+TssSoftwareSerialComClass	KEYWORD1
+setBaudrate	KEYWORD2
+getBaudrate	KEYWORD2
+
+TssStreamComClassBase	KEYWORD1
+TssStreamComClass	KEYWORD1
+TssSpiComClassBase	KEYWORD1
+TssSpiComClass	KEYWORD1
+TssI2cComClassBase	KEYWORD1
+TssI2cComClass	KEYWORD1
+setIrqPins	KEYWORD2
+setReadMode	KEYWORD2
+getReadMode	KEYWORD2
+ReadMode	KEYWORD1
+
+TSS_Sensor	KEYWORD1
+
