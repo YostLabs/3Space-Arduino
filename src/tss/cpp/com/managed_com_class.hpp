@@ -170,6 +170,12 @@ private:
     // Provides peek/length/read_until/clear support (and write buffering,
     // if TSS_BUFFERED_WRITES=1) on top of m_hw.
     struct TSS_Managed_Com_Class m_managed;
+
+    // Result of tssCreateManagedComDynamic() from the constructor -
+    // TSS_SUCCESS, or TSS_ERR_INVALID_SIZE if read_buf_size wasn't a power
+    // of 2. A constructor can't itself report failure, so open() checks
+    // this and fails instead of using a half-initialized m_managed.
+    int m_create_result;
 };
 
 } // namespace tss
@@ -184,7 +190,9 @@ private:
 //---------------------------------------------------------------------------
 
 #if !(TSS_MINIMAL_SENSOR)
-#define TSS_DECLARE_MANAGED_COM_READ_BUFFER(READ_SIZE) uint8_t m_read_buffer[READ_SIZE];
+#define TSS_DECLARE_MANAGED_COM_READ_BUFFER(READ_SIZE) \
+    static_assert(TSS_RING_POW_2(READ_SIZE), "TSS_DECLARE_MANAGED_COM_BUFFERS()/TSS_DECLARE_MANAGED_COM_READ_BUFFER(): read buffer size must be a power of 2"); \
+    uint8_t m_read_buffer[READ_SIZE];
 #define TSS_MANAGED_COM_READ_BUFFER_ARGS m_read_buffer, sizeof(m_read_buffer)
 #else
 #define TSS_DECLARE_MANAGED_COM_READ_BUFFER(READ_SIZE)

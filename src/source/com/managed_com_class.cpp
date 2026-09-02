@@ -10,7 +10,7 @@ ManagedComClass::ManagedComClass(bool supports_reenumeration, uint8_t *read_buf,
     m_hw.base.reenumerates = supports_reenumeration;
     m_hw.context = this;
 
-    tssCreateManagedComDynamic(&m_hw.base, read_buf, read_buf_size, write_buf, write_buf_size, &m_managed);
+    m_create_result = tssCreateManagedComDynamic(&m_hw.base, read_buf, read_buf_size, write_buf, write_buf_size, &m_managed);
 }
 
 int ManagedComClass::reenumerateImpl(struct TSS_Com_Class * /*com*/, TssComAutoDetectCallback /*cb*/, void * /*detect_data*/)
@@ -31,6 +31,9 @@ int ManagedComClass::autoDetectImpl(struct TSS_Com_Class * /*com*/, TssComAutoDe
 
 int ManagedComClass::open()
 {
+    if(m_create_result != TSS_SUCCESS) {
+        return m_create_result;
+    }
     return tss_com_open(&m_managed.base);
 }
 
