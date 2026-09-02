@@ -178,7 +178,7 @@ static const struct TSS_Command * const m_commands[256] = {
     OUTPUT(STRING(1))
     CMD_END
 
-    READ_CMD(84, "StreamingGetPacket", DYNAMIC_TYPE(1))
+    READ_CMD(84, "StreamingGeneratePacket", DYNAMIC_TYPE(1))
     ACTION_CMD(85, "StreamingStart")
     ACTION_CMD(86, "StreamingStop")
     WRITE_CMD(87, "LoggingPauseStreaming", U8(1))

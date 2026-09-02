@@ -150,7 +150,7 @@ TSS_API int sensorStreamingStart(TSS_Sensor *sensor, TssDataCallback cb);
 TSS_API int sensorFileStreamingStart(TSS_Sensor *sensor, TssDataCallback cb, uint64_t *out_size);
 TSS_API int sensorLoggingStart(TSS_Sensor *sensor, TssDataCallback cb);
 
-TSS_API int sensorStreamingGetPacketArray(TSS_Sensor *sensor, void **outputs);
+TSS_API int sensorStreamingGeneratePacketArray(TSS_Sensor *sensor, void **outputs);
 
 /// @brief Disconnects and reconnects to the sensor. May
 /// require additional com class functionality (Reenumerate/Auto Detect)
@@ -257,7 +257,7 @@ TSS_API int sensorEEPTSGetAvailableStepCount(TSS_Sensor *sensor, uint8_t *out_co
 TSS_API int sensorEEPTSInsertGPS(TSS_Sensor *sensor, double Latitude, double Longitude);
 TSS_API int sensorEEPTSAutoOffset(TSS_Sensor *sensor);
 TSS_API int sensorStreamingGetCommandLabel(TSS_Sensor *sensor, uint8_t cmd_number, char *out_label, uint32_t size);
-TSS_API int sensorStreamingGetPacket(TSS_Sensor *sensor, ...);
+TSS_API int sensorStreamingGeneratePacket(TSS_Sensor *sensor, ...);
 TSS_API int sensorStreamingStop(TSS_Sensor *sensor);
 TSS_API int sensorLoggingPauseStreaming(TSS_Sensor *sensor, uint8_t pause);
 TSS_API int sensorGetClockValuesString(TSS_Sensor *sensor, char *out_datetime, uint32_t size);
