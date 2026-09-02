@@ -10,7 +10,17 @@ ManagedComClass::ManagedComClass(bool supports_reenumeration, uint8_t *read_buf,
     m_hw.base.reenumerates = supports_reenumeration;
     m_hw.context = this;
 
-    m_create_result = tssCreateManagedComDynamic(&m_hw.base, read_buf, read_buf_size, write_buf, write_buf_size, &m_managed);
+    int result = tssCreateManagedComDynamic(&m_hw.base, read_buf, read_buf_size, write_buf, write_buf_size, &m_managed);
+    if(result != TSS_SUCCESS) {
+        // tssCreateManagedComDynamic() failed (currently: read_buf_size
+        // wasn't a power of 2) without writing anything to m_managed, so it
+        // otherwise holds indeterminate values. Routing m_managed.base.api
+        // to s_failed_api instead means every ManagedComClass method below
+        // can keep unconditionally dispatching through m_managed.base -
+        // exactly like the success path - and just ends up safely reporting
+        // failure/no-op instead of reading that indeterminate state.
+        m_managed.base.api = &s_failed_api;
+    }
 }
 
 int ManagedComClass::reenumerateImpl(struct TSS_Com_Class * /*com*/, TssComAutoDetectCallback /*cb*/, void * /*detect_data*/)
@@ -31,9 +41,6 @@ int ManagedComClass::autoDetectImpl(struct TSS_Com_Class * /*com*/, TssComAutoDe
 
 int ManagedComClass::open()
 {
-    if(m_create_result != TSS_SUCCESS) {
-        return m_create_result;
-    }
     return tss_com_open(&m_managed.base);
 }
 
@@ -215,6 +222,109 @@ const struct TSS_Com_Class_API ManagedComClass::s_impl_api = {
     trampolineCloseImpl,
     trampolineReenumerateImpl,
     trampolineAutoDetectImpl,
+};
+
+//-----------------------------------------------------------------------
+// s_failed_api - used as m_managed.base.api instead of s_impl_api's normal
+// counterpart when tssCreateManagedComDynamic() fails in the constructor
+// (see above). Every entry ignores its arguments and just returns/no-ops
+// immediately - no state to touch, so nothing here can ever fail further.
+//-----------------------------------------------------------------------
+
+int ManagedComClass::failedOpenOrClose(struct TSS_Com_Class * /*com*/)
+{
+    return TSS_ERR_INVALID_SIZE;
+}
+
+int ManagedComClass::failedRead(struct TSS_Com_Class * /*com*/, size_t /*num_bytes*/, uint8_t * /*out*/)
+{
+    return TSS_ERR_INVALID_SIZE;
+}
+
+int ManagedComClass::failedReadUntil(struct TSS_Com_Class * /*com*/, uint8_t /*value*/, uint8_t * /*out*/, size_t /*size*/)
+{
+    return TSS_ERR_INVALID_SIZE;
+}
+
+int ManagedComClass::failedWrite(struct TSS_Com_Class * /*com*/, const uint8_t * /*bytes*/, size_t /*len*/)
+{
+    return TSS_ERR_INVALID_SIZE;
+}
+
+void ManagedComClass::failedSetTimeout(struct TSS_Com_Class * /*com*/, uint32_t /*timeout_ms*/)
+{
+}
+
+uint32_t ManagedComClass::failedGetTimeout(struct TSS_Com_Class * /*com*/)
+{
+    return 0;
+}
+
+void ManagedComClass::failedClear(struct TSS_Com_Class * /*com*/)
+{
+}
+
+void ManagedComClass::failedClearTimeout(struct TSS_Com_Class * /*com*/, uint32_t /*timeout_ms*/)
+{
+}
+
+int ManagedComClass::failedReenumerateOrAutoDetect(struct TSS_Com_Class * /*com*/, TssComAutoDetectCallback /*cb*/, void * /*detect_data*/)
+{
+    return TSS_ERR_INVALID_SIZE;
+}
+
+#if !(TSS_MINIMAL_SENSOR)
+int ManagedComClass::failedPeek(struct TSS_Com_Class * /*com*/, size_t /*start*/, size_t /*num_bytes*/, uint8_t * /*out*/)
+{
+    return TSS_ERR_INVALID_SIZE;
+}
+
+int ManagedComClass::failedPeekUntil(struct TSS_Com_Class * /*com*/, size_t /*start*/, uint8_t /*value*/, uint8_t * /*out*/, size_t /*size*/)
+{
+    return TSS_ERR_INVALID_SIZE;
+}
+
+size_t ManagedComClass::failedPeekCapacityOrLength(struct TSS_Com_Class * /*com*/)
+{
+    return 0;
+}
+#endif
+
+#if TSS_BUFFERED_WRITES
+int ManagedComClass::failedBeginOrEndWrite(struct TSS_Com_Class * /*com*/)
+{
+    return TSS_ERR_INVALID_SIZE;
+}
+#endif
+
+const struct TSS_Com_Class_API ManagedComClass::s_failed_api = {
+    // in (struct TSS_Input_Stream)
+    {
+        failedRead,
+        failedReadUntil,
+#if !(TSS_MINIMAL_SENSOR)
+        failedPeek,
+        failedPeekUntil,
+        failedPeekCapacityOrLength,
+        failedPeekCapacityOrLength, // length
+#endif
+        failedSetTimeout,
+        failedGetTimeout,
+        failedClear,
+        failedClearTimeout,
+    },
+    // out (struct TSS_Output_Stream)
+    {
+        failedWrite,
+#if TSS_BUFFERED_WRITES
+        failedBeginOrEndWrite, // begin_write
+        failedBeginOrEndWrite, // end_write
+#endif
+    },
+    failedOpenOrClose, // open
+    failedOpenOrClose, // close
+    failedReenumerateOrAutoDetect, // reenumerate
+    failedReenumerateOrAutoDetect, // auto_detect
 };
 
 } // namespace tss

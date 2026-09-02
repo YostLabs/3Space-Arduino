@@ -152,6 +152,16 @@ private:
     // communication/serial/serial_com_class.c does for its own raw child).
     static const struct TSS_Com_Class_API s_impl_api;
 
+    // TSS_Com_Class_API vtable used as m_managed.base.api INSTEAD of the
+    // real one tssCreateManagedComDynamic() would normally set up, when
+    // that call fails (currently: read_buf_size wasn't a power of 2) - see
+    // the constructor. Every entry just returns/no-ops immediately, so
+    // ManagedComClass's own methods (open()/read()/write()/...) never need
+    // to check for this themselves - they always unconditionally dispatch
+    // through m_managed.base.api, exactly like the success path, and simply
+    // get routed here instead of into potentially-uninitialized state.
+    static const struct TSS_Com_Class_API s_failed_api;
+
     static ManagedComClass *implOwner(struct TSS_Com_Class *com);
 
     static int trampolineOpenImpl(struct TSS_Com_Class *com);
@@ -163,20 +173,37 @@ private:
     static int trampolineReenumerateImpl(struct TSS_Com_Class *com, TssComAutoDetectCallback cb, void *detect_data);
     static int trampolineAutoDetectImpl(struct TSS_Com_Class *out, TssComAutoDetectCallback cb, void *detect_data);
 
+    // s_failed_api's entries - all ignore `com` and its other arguments,
+    // simply reporting failure/nothing-to-report immediately.
+    static int failedOpenOrClose(struct TSS_Com_Class *com);
+    static int failedRead(struct TSS_Com_Class *com, size_t num_bytes, uint8_t *out);
+    static int failedReadUntil(struct TSS_Com_Class *com, uint8_t value, uint8_t *out, size_t size);
+    static int failedWrite(struct TSS_Com_Class *com, const uint8_t *bytes, size_t len);
+    static void failedSetTimeout(struct TSS_Com_Class *com, uint32_t timeout_ms);
+    static uint32_t failedGetTimeout(struct TSS_Com_Class *com);
+    static void failedClear(struct TSS_Com_Class *com);
+    static void failedClearTimeout(struct TSS_Com_Class *com, uint32_t timeout_ms);
+    static int failedReenumerateOrAutoDetect(struct TSS_Com_Class *com, TssComAutoDetectCallback cb, void *detect_data);
+#if !(TSS_MINIMAL_SENSOR)
+    static int failedPeek(struct TSS_Com_Class *com, size_t start, size_t num_bytes, uint8_t *out);
+    static int failedPeekUntil(struct TSS_Com_Class *com, size_t start, uint8_t value, uint8_t *out, size_t size);
+    static size_t failedPeekCapacityOrLength(struct TSS_Com_Class *com);
+#endif
+#if TSS_BUFFERED_WRITES
+    static int failedBeginOrEndWrite(struct TSS_Com_Class *com);
+#endif
+
     // The "hardware" com object - what m_managed wraps as its child. Its
     // `.context` is `this`, and its `.api` is s_impl_api.
     struct TSS_Context_Com_Class m_hw;
 
     // Provides peek/length/read_until/clear support (and write buffering,
-    // if TSS_BUFFERED_WRITES=1) on top of m_hw.
+    // if TSS_BUFFERED_WRITES=1) on top of m_hw. If construction fails (see
+    // the constructor), only `.base.api` is set (to s_failed_api) - nothing
+    // else about this is safe to read directly, only through `.base.api`.
     struct TSS_Managed_Com_Class m_managed;
-
-    // Result of tssCreateManagedComDynamic() from the constructor -
-    // TSS_SUCCESS, or TSS_ERR_INVALID_SIZE if read_buf_size wasn't a power
-    // of 2. A constructor can't itself report failure, so open() checks
-    // this and fails instead of using a half-initialized m_managed.
-    int m_create_result;
 };
+
 
 } // namespace tss
 
