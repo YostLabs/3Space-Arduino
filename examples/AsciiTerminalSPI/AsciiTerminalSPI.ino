@@ -31,10 +31,10 @@
 */
 
 // Can run up to 10MHz based on sensor settings and wiring.
-// Defaulting to low speed of 100Khz to ensure example 
-// works with dupont cables and slow passive logic level converters.
-// A resistor may still be needed in series on the CLK line to reduce
-// communication noise depending on your circuit. Try 200-300 ohms if problematic.
+// Defaulting to low speed of 100Khz to help the example 
+// work with DuPont cables and slow passive logic level converters.
+// If using a logic level converter, then it is recommended to use 
+// an active logic level converter for reliable high speed SPI communication.
 #define SPI_DEFAULT_CLK 100000
 
 // Controlling CS pin manually instead of using built in SPI clock pin to handle
