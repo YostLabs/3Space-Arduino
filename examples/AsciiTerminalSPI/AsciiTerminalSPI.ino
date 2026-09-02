@@ -64,6 +64,7 @@ void setup() {
   spiCom.setTimeout(1000);
   if(spiCom.open()) {
     Serial.println("Failed to open.");
+    while(true);
   }
   Serial.println("Initialized communication.");
 

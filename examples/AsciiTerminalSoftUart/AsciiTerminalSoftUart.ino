@@ -39,6 +39,7 @@ void setup() {
   uartCom.setTimeout(1000);
   if(uartCom.open()) {
     Serial.println("Failed to open.");
+    while(true);
   }
   Serial.println("Initialized communication.");
 

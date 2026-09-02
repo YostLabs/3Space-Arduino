@@ -57,7 +57,11 @@ void setup() {
 
   //Create and open the communication object
   com.setTimeout(1000);
-  com.open();
+  if(com.open()) {
+    Serial.println("Failed to open.");
+    while(true);
+  }
+  
   Serial.println("Com Opened");
 
   //Create the sensor object from the communication object

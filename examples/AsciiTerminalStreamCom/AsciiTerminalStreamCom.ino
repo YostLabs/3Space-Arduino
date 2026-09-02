@@ -44,6 +44,7 @@ void setup() {
   streamCom.setTimeout(1000);
   if(streamCom.open()) {
     Serial.println("Failed to open.");
+    while(true);
   }
   Serial.println("Initialized communication.");
 }
