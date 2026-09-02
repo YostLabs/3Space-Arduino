@@ -5,7 +5,7 @@
 
 //---------------------------------------CUSTOM STREAMING------------------------------------------------
 
-int sensorStreamingGetPacket(TSS_Sensor *sensor, ...) {
+int sensorStreamingGeneratePacket(TSS_Sensor *sensor, ...) {
     va_list outputs;
     int result;
 
@@ -15,7 +15,7 @@ int sensorStreamingGetPacket(TSS_Sensor *sensor, ...) {
     return result;
 }
 
-int sensorStreamingGetPacketArray(TSS_Sensor *sensor, void **outputs) {
+int sensorStreamingGeneratePacketArray(TSS_Sensor *sensor, void **outputs) {
     return sensorInternalExecuteCommandCustomArray(sensor, tssGetCommand(84), NULL, sensorInternalProcessStreamingBatchArray, outputs);
 }
 
